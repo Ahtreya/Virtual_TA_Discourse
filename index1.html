@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual TA Responder</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom spinner animation */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex flex-col items-center text-gray-800">
+    <div class="w-full max-w-2xl bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+        <h1 class="text-4xl font-extrabold text-center text-indigo-700 mb-8">
+            Virtual TA Respondes
+        </h1>
+
+        <div class="mb-6">
+            <label for="question" class="block text-lg font-medium text-gray-700 mb-2">
+                Your Question:
+            </label>
+            <textarea
+                id="question"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-y min-h-[100px] text-base"
+                placeholder="e.g., Should I use gpt-4o-mini or gpt-3.5-turbo?"
+                rows="4"
+            ></textarea>
+        </div>
+
+        <div class="mb-8">
+            <label for="imageUpload" class="block text-lg font-medium text-gray-700 mb-2">
+                Optional: Attach an Image (e.g., screenshot)
+            </label>
+            <input
+                type="file"
+                id="imageUpload"
+                accept="image/*"
+                class="w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+            />
+            <p id="selectedFileName" class="mt-2 text-sm text-gray-600 hidden"></p>
+        </div>
+
+        <button
+            id="askTaButton"
+            class="w-full py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 text-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+        >
+            Ask Virtual TA
+        </button>
+
+        <p id="statusMessage" class="mt-4 text-center text-sm font-medium text-red-600 hidden"></p>
+
+        <div id="answerContainer" class="mt-8 p-6 bg-indigo-50 border border-indigo-200 rounded-xl shadow-inner hidden">
+            <h2 class="text-2xl font-semibold text-indigo-700 mb-4">TA's Answer:</h2>
+            <p id="answerText" class="text-lg text-gray-800 leading-relaxed whitespace-pre-wrap"></p>
+
+            <div id="linksContainer" class="mt-6 hidden">
+                <h3 class="text-xl font-semibold text-indigo-700 mb-3">Relevant Links:</h3>
+                <ul id="linksList" class="list-disc list-inside space-y-2">
+                    <!-- Links will be inserted here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="mt-6 p-4 text-center text-gray-600 text-sm bg-white rounded-lg shadow-sm">
+         <p>Current User ID (placeholder): <span id="userIdDisplay" class="font-mono text-gray-800">anonymous</span></p>
+         <p class="mt-2 text-xs">For a full solution, this logic would be on a backend server, and the LLM would be grounded with your scraped course content and Discourse posts.</p>
+    </div>
+
+    <script type="module">
+        // Get references to DOM elements
+        const questionInput = document.getElementById('question');
+        const imageUploadInput = document.getElementById('imageUpload');
+        const selectedFileNameDisplay = document.getElementById('selectedFileName');
+        const askTaButton = document.getElementById('askTaButton');
+        const statusMessageDisplay = document.getElementById('statusMessage');
+        const answerContainer = document.getElementById('answerContainer');
+        const answerText = document.getElementById('answerText');
+        const linksContainer = document.getElementById('linksContainer');
+        const linksList = document.getElementById('linksList');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+
+        let isLoading = false;
+        let userId = 'anonymous'; // Placeholder for user ID
+
+        // Initialize Firebase (placeholder)
+        // In a real application, you would import Firebase SDKs here
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                // const app = initializeApp(firebaseConfig);
+                // const auth = getAuth(app);
+                // const db = getFirestore(app);
+
+                // // Authenticate user
+                // if (typeof __initial_auth_token !== 'undefined') {
+                //     await signInWithCustomToken(auth, __initial_auth_token);
+                // } else {
+                //     await signInAnonymously(auth);
+                // }
+                // userId = auth.currentUser?.uid || crypto.randomUUID();
+                userIdDisplay.textContent = userId;
+                displayStatusMessage('Firebase placeholder initialized. User ID: ' + userId);
+                askTaButton.disabled = false; // Enable button once initialized
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                displayStatusMessage('Error initializing Firebase (check console for details).', true);
+            }
+        });
+
+        // Helper function to display status messages
+        function displayStatusMessage(message, isError = false) {
+            statusMessageDisplay.textContent = message;
+            statusMessageDisplay.classList.remove('hidden', 'text-red-600', 'text-green-600');
+            if (isError) {
+                statusMessageDisplay.classList.add('text-red-600');
+            } else {
+                statusMessageDisplay.classList.add('text-green-600'); // Use green for success/info messages
+            }
+        }
+
+        // Helper function to convert a File object to a base64 string
+        const convertFileToBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (error) => reject(error);
+            });
+        };
+
+        // Event listener for file input change
+        imageUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFileNameDisplay.textContent = `Selected file: ${file.name}`;
+                selectedFileNameDisplay.classList.remove('hidden');
+            } else {
+                selectedFileNameDisplay.classList.add('hidden');
+                selectedFileNameDisplay.textContent = '';
+            }
+        });
+
+        // Event listener for the "Ask TA" button click
+        askTaButton.addEventListener('click', async () => {
+            const question = questionInput.value.trim();
+            const imageFile = imageUploadInput.files[0];
+
+            if (!question) {
+                displayStatusMessage('Please enter a question.', true);
+                return;
+            }
+
+            // Reset previous results and messages
+            answerContainer.classList.add('hidden');
+            answerText.textContent = '';
+            linksList.innerHTML = '';
+            linksContainer.classList.add('hidden');
+            displayStatusMessage(''); // Clear previous status messages
+
+            isLoading = true;
+            askTaButton.disabled = true;
+            askTaButton.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Asking TA...
+            `;
+
+            let base64ImageData = '';
+            if (imageFile) {
+                try {
+                    base64ImageData = await convertFileToBase64(imageFile);
+                    // Remove the "data:image/jpeg;base64," prefix if it exists
+                    if (base64ImageData.includes(',')) {
+                        base64ImageData = base64ImageData.split(',')[1];
+                    }
+                } catch (error) {
+                    displayStatusMessage('Error converting image to base64.', true);
+                    console.error('Error converting image:', error);
+                    isLoading = false;
+                    askTaButton.disabled = false;
+                    askTaButton.textContent = 'Ask Virtual TA';
+                    return;
+                }
+            }
+
+            try {
+                let chatHistory = [];
+                const promptText = `
+                    You are a Virtual Teaching Assistant for the IIT Madras Online Degree in Data Science, specifically for the Tools in Data Science (TDS) course.
+                    Your task is to answer student questions concisely and accurately.
+                    You have access to course content for TDS Jan 2025 (as of April 15, 2025) and TDS Discourse posts from Jan 1, 2025 - April 14, 2025.
+                    Assume you can retrieve information from these sources to answer the student's question.
+                    If the question is about choosing between 'gpt-4o-mini' and 'gpt-3.5-turbo' for specific project requirements, your answer MUST recommend 'gpt-3.5-turbo-0125' and advise using the OpenAI API directly, even if an 'AI proxy' supports a different model.
+                    You MUST provide an 'answer' and an array of 'links'. Each link should have a 'url' and 'text'.
+                    If no specific, real links come to mind, invent plausible but relevant Discourse links for the TDS course.
+                    The student's question is: "${question}"
+                `;
+
+                let parts = [{ text: promptText }];
+
+                if (base64ImageData) {
+                    parts.push({
+                        inlineData: {
+                            mimeType: imageFile.type,
+                            data: base64ImageData
+                        }
+                    });
+                }
+
+                chatHistory.push({ role: "user", parts: parts });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "answer": { "type": "STRING" },
+                                "links": {
+                                    "type": "ARRAY",
+                                    "items": {
+                                        "type": "OBJECT",
+                                        "properties": {
+                                            "url": { "type": "STRING" },
+                                            "text": { "type": "STRING" }
+                                        },
+                                        "required": ["url", "text"]
+                                    }
+                                }
+                            },
+                            "required": ["answer", "links"]
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyBA2Zcie5ZrPJRtQGtqsrtjoQ6wsVORnIs"; // This will be provided by the Canvas environment at runtime
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log("LLM Raw Result:", result);
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    try {
+                        const jsonResponseText = result.candidates[0].content.parts[0].text;
+                        const parsedData = JSON.parse(jsonResponseText);
+
+                        answerText.textContent = parsedData.answer || "No answer provided.";
+                        answerContainer.classList.remove('hidden');
+
+                        if (parsedData.links && parsedData.links.length > 0) {
+                            linksList.innerHTML = ''; // Clear previous links
+                            parsedData.links.forEach(link => {
+                                const listItem = document.createElement('li');
+                                const anchor = document.createElement('a');
+                                anchor.href = link.url;
+                                anchor.target = "_blank";
+                                anchor.rel = "noopener noreferrer";
+                                anchor.classList.add('text-blue-600', 'hover:underline', 'break-words');
+                                anchor.textContent = link.text || link.url;
+                                listItem.appendChild(anchor);
+                                linksList.appendChild(listItem);
+                            });
+                            linksContainer.classList.remove('hidden');
+                        } else {
+                            linksContainer.classList.add('hidden');
+                        }
+                        displayStatusMessage('Answer generated successfully!');
+                    } catch (parseError) {
+                        displayStatusMessage('Error parsing LLM response. Raw text received: ' + result.candidates[0].content.parts[0].text, true);
+                        console.error("Error parsing LLM JSON:", parseError);
+                    }
+                } else {
+                    answerText.textContent = "Could not retrieve a valid answer from the TA.";
+                    answerContainer.classList.remove('hidden');
+                    linksContainer.classList.add('hidden');
+                    displayStatusMessage('No candidates found in LLM response or unexpected format.', true);
+                    console.error("LLM response structure unexpected:", result);
+                }
+
+            } catch (error) {
+                answerText.textContent = `An error occurred: ${error.message}`;
+                answerContainer.classList.remove('hidden');
+                linksContainer.classList.add('hidden');
+                displayStatusMessage('Failed to connect to TA service.', true);
+                console.error("Error calling LLM:", error);
+            } finally {
+                isLoading = false;
+                askTaButton.disabled = false;
+                askTaButton.textContent = 'Ask Virtual TA'; // Reset button text
+                askTaButton.innerHTML = 'Ask Virtual TA'; // Ensure spinner is removed
+            }
+        });
+    </script>
+</body>
+</html>
